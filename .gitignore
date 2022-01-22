@@ -1,2 +1,2 @@
-server/.env
-infra/dev/.env
+**/*.env
+!**/*.example.env
