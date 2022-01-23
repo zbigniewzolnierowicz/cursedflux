@@ -12,7 +12,7 @@ async fn hello() -> HttpResponse {
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::resource("/api")
+        web::resource("/")
             .route(web::get().to(hello))
     );
 }
