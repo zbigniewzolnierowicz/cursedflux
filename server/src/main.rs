@@ -1,3 +1,5 @@
+mod controllers;
+
 use env_logger::Env;
 
 #[actix_web::main]
@@ -9,6 +11,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .wrap(Logger::default())
+            .configure(controllers::config)
     })
     .bind("127.0.0.1:8080")?
     .run()
