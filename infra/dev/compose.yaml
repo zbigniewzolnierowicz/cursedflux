@@ -1,7 +1,7 @@
 version: '3'
 services:
   postgres:
-    image: 'postgres:latest'
+    image: 'docker.io/library/postgres:latest'
     ports:
       - "5432:5432"
     env_file:
