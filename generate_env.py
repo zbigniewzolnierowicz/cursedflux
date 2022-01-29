@@ -7,11 +7,9 @@ complete_config = {
     **dotenv_values("database.env")
 }
 
-complete_config['DATABASE_URL'] = "DATABASE_URL=postgres://{username}:{password}@localhost/{database}".format(
-    username = complete_config['POSTGRES_USER'],
-    password = complete_config['POSTGRES_PASSWORD'],
-    database = complete_config['POSTGRES_DB']
-)
+complete_config['DATABASE_URL'] = "postgres://{username}:{password}@localhost/{database}".format(
+    username=complete_config['POSTGRES_USER'], password=complete_config['POSTGRES_PASSWORD'],
+    database=complete_config['POSTGRES_DB'])
 
 server_file = open("server/.env", 'w')
 infra_dev_file = open("infra/dev/.env", 'w')
