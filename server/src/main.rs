@@ -3,6 +3,7 @@ extern crate diesel;
 extern crate dotenv;
 
 mod controllers;
+mod schema;
 
 use env_logger::Env;
 use diesel::prelude::*;
