@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS users (
     password_salt TEXT NOT NULL
 );
 
-CREATE TRIGGER trigger_test_genid BEFORE INSERT ON users FOR EACH ROW EXECUTE PROCEDURE shortkey_generate();
+CREATE TRIGGER trigger_users_genid BEFORE INSERT ON users FOR EACH ROW EXECUTE PROCEDURE shortkey_generate();

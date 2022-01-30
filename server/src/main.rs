@@ -10,6 +10,8 @@ use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
+use actix_web::middleware::normalize::TrailingSlash;
+use actix_web::web;
 use diesel::r2d2::ConnectionManager;
 use crate::diesel::r2d2;
 
@@ -21,7 +23,7 @@ pub struct AppData {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    use actix_web::{HttpServer, App, middleware::Logger};
+    use actix_web::{HttpServer, App, middleware::{Logger, NormalizePath}};
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").expect("Database URL missing.");
@@ -36,8 +38,12 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
+            .wrap(NormalizePath::new(TrailingSlash::Always))
             .data(AppData { db: pool.clone() })
-            .configure(controllers::config)
+            .service(
+                web::scope("/api")
+                        .service(web::scope("/user").configure(controllers::config))
+            )
     })
     .bind("127.0.0.1:8080")?
     .run()
