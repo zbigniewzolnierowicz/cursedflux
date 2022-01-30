@@ -1,8 +1,9 @@
 table! {
     users (id) {
         id -> Varchar,
-        username -> Text,
-        password_hash -> Text,
-        password_salt -> Text,
+        username -> Varchar,
+        password_hash -> Varchar,
+        password_salt -> Varchar,
+        email -> Varchar,
     }
 }

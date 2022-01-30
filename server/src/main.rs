@@ -1,21 +1,24 @@
 #[macro_use]
 extern crate diesel;
 extern crate dotenv;
+extern crate rand;
+extern crate argon2;
 
 mod controllers;
 mod schema;
+mod models;
 
 use env_logger::Env;
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
 use actix_web::middleware::normalize::TrailingSlash;
 use actix_web::web;
-use diesel::r2d2::ConnectionManager;
+use diesel::r2d2::{ConnectionManager,PooledConnection};
 use crate::diesel::r2d2;
 
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+pub type DB = PooledConnection<ConnectionManager<PgConnection>>;
 
 pub struct AppData {
     pub db: DbPool
