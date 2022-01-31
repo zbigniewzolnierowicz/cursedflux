@@ -26,6 +26,7 @@ pub struct User {
     pub id: String,
     pub username: String,
     pub password_hash: String,
+    pub password_salt: String,
     pub email: String,
 }
 
@@ -34,6 +35,7 @@ pub struct User {
 pub struct UserChangeset {
     pub username: String,
     pub password_hash: String,
+    pub password_salt: String,
     pub email: String,
 }
 

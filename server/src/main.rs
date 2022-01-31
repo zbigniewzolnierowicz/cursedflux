@@ -2,7 +2,7 @@
 extern crate diesel;
 extern crate dotenv;
 extern crate rand;
-extern crate bcrypt;
+extern crate argon2;
 
 mod controllers;
 mod schema;
