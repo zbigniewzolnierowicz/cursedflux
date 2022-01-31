@@ -1,13 +1,13 @@
+use crate::extractors::UserError;
 use crate::models::user::{NewUserPayload, User, UserChangeset};
 use crate::AppData;
-use actix_web::{get, post, web, HttpResponse, Responder};
 use actix_web::error::BlockingError;
-use argon2::{Argon2, PasswordHasher};
+use actix_web::{get, post, web, HttpResponse, Responder};
 use argon2::password_hash::SaltString;
+use argon2::{Argon2, PasswordHasher};
 use diesel::result::Error;
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
-use crate::extractors::UserError;
 
 #[derive(Serialize, Deserialize)]
 struct HelloResponse {
@@ -30,7 +30,10 @@ async fn register_user(
 
     let password_salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    let password_hash = argon2.hash_password(payload.password.as_ref(), &password_salt).unwrap().to_string();
+    let password_hash = argon2
+        .hash_password(payload.password.as_ref(), &password_salt)
+        .unwrap()
+        .to_string();
 
     let changeset = UserChangeset {
         username: payload.0.username,
@@ -41,9 +44,11 @@ async fn register_user(
 
     let res = web::block(move || User::create(&db, &changeset))
         .await
-        .map(|user| { HttpResponse::Ok().json(user) })
+        .map(|user| HttpResponse::Ok().json(user))
         .map_err(|err| match err {
-            BlockingError::Error(Error::DatabaseError(db_error_kind, _)) => UserError::from(db_error_kind),
+            BlockingError::Error(Error::DatabaseError(db_error_kind, _)) => {
+                UserError::from(db_error_kind)
+            }
             _ => UserError::InternalServerError,
         });
     res

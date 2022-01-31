@@ -42,9 +42,7 @@ pub struct UserChangeset {
 impl User {
     pub fn create(db: &DB, item: &UserChangeset) -> QueryResult<Self> {
         use crate::schema::users::dsl::*;
-        insert_into(users)
-            .values(item)
-            .get_result::<User>(db)
+        insert_into(users).values(item).get_result::<User>(db)
     }
 
     pub fn get_all(db: &DB) -> QueryResult<Vec<Self>> {
