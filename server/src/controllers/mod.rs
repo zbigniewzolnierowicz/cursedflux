@@ -27,19 +27,24 @@ async fn register_user(
     payload: web::Json<NewUserPayload>,
 ) -> impl Responder {
     let db = data.db.get().unwrap();
+    let NewUserPayload {
+        username,
+        email,
+        password,
+    } = payload.0;
 
     let password_salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
     let password_hash = argon2
-        .hash_password(payload.password.as_ref(), &password_salt)
+        .hash_password(password.as_ref(), &password_salt)
         .unwrap()
         .to_string();
 
     let changeset = UserChangeset {
-        username: payload.0.username,
+        username,
         password_hash,
         password_salt: password_salt.as_ref().to_string(),
-        email: payload.0.email,
+        email,
     };
 
     let res = web::block(move || User::create(&db, &changeset))
