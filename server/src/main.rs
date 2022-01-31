@@ -7,6 +7,7 @@ extern crate argon2;
 mod controllers;
 mod schema;
 mod models;
+mod extractors;
 
 use env_logger::Env;
 use diesel::pg::PgConnection;

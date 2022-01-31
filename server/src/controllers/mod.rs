@@ -1,12 +1,13 @@
 use crate::models::user::{NewUserPayload, User, UserChangeset};
 use crate::AppData;
-use actix_web::{get, post, web, HttpResponse};
+use actix_web::{get, post, web, HttpResponse, Responder};
 use actix_web::error::BlockingError;
 use argon2::{Argon2, PasswordHasher};
 use argon2::password_hash::SaltString;
-use diesel::result::{DatabaseErrorKind, Error};
+use diesel::result::Error;
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
+use crate::extractors::UserError;
 
 #[derive(Serialize, Deserialize)]
 struct HelloResponse {
@@ -24,7 +25,7 @@ async fn hello(data: web::Data<AppData>) -> HttpResponse {
 async fn register_user(
     data: web::Data<AppData>,
     payload: web::Json<NewUserPayload>,
-) -> HttpResponse {
+) -> impl Responder {
     let db = data.db.get().unwrap();
 
     let password_salt = SaltString::generate(&mut OsRng);
@@ -40,23 +41,12 @@ async fn register_user(
 
     let res = web::block(move || User::create(&db, &changeset))
         .await
-        .map(|user| { HttpResponse::Ok().json(user) });
-
-    match res {
-        Ok(r) => r,
-        Err(error) => match error {
-            BlockingError::Error(error) => match error {
-                Error::DatabaseError(db_error_kind, _) => match db_error_kind {
-                    DatabaseErrorKind::UniqueViolation => {
-                        HttpResponse::Ok().body("An account with the following data already exists!")
-                    },
-                    _ => HttpResponse::InternalServerError().finish()
-                },
-                _ => HttpResponse::InternalServerError().finish()
-            },
-            _ => HttpResponse::InternalServerError().finish()
-        }
-    }
+        .map(|user| { HttpResponse::Ok().json(user) })
+        .map_err(|err| match err {
+            BlockingError::Error(Error::DatabaseError(db_error_kind, _)) => UserError::from(db_error_kind),
+            _ => UserError::InternalServerError,
+        });
+    res
 }
 
 pub fn config(cfg: &mut web::ServiceConfig) {

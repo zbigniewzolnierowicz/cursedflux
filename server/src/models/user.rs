@@ -44,7 +44,7 @@ impl User {
         use crate::schema::users::dsl::*;
         insert_into(users)
             .values(item)
-            .get_result::<User>(db.clone())
+            .get_result::<User>(db)
     }
 
     pub fn get_all(db: &DB) -> QueryResult<Vec<Self>> {
