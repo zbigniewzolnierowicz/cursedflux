@@ -2,7 +2,7 @@
 extern crate diesel;
 extern crate dotenv;
 extern crate rand;
-extern crate argon2;
+extern crate bcrypt;
 
 mod controllers;
 mod schema;
@@ -12,6 +12,7 @@ use env_logger::Env;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
+use std::sync::Arc;
 use actix_web::middleware::normalize::TrailingSlash;
 use actix_web::web;
 use diesel::r2d2::{ConnectionManager,PooledConnection};
@@ -21,7 +22,7 @@ pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DB = PooledConnection<ConnectionManager<PgConnection>>;
 
 pub struct AppData {
-    pub db: DbPool
+    pub db: Arc<DbPool>
 }
 
 #[actix_web::main]
@@ -42,7 +43,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(Logger::default())
             .wrap(NormalizePath::new(TrailingSlash::Always))
-            .data(AppData { db: pool.clone() })
+            .data(AppData { db: Arc::from(pool.clone()) })
             .service(
                 web::scope("/api")
                         .service(web::scope("/user").configure(controllers::config))
