@@ -1,3 +1,4 @@
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use crate::diesel::*;
 use crate::schema::*;
 use crate::DB;
@@ -49,4 +50,26 @@ impl User {
         use crate::schema::users::dsl::*;
         users.load(db)
     }
+
+    pub fn get_by_email(db: &DB, payload_email: String) -> QueryResult<Self> {
+        use crate::schema::users::dsl::*;
+        users.filter(email.eq(payload_email)).first(db)
+    }
+
+    pub fn check_login(self, password: String) -> bool {
+        let argon2 = Argon2::default();
+        let parsed_hash = match PasswordHash::new(&self.password_hash) {
+            Ok(parsed_hash) => parsed_hash,
+            Err(_) => return false,
+        };
+        let result = argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok();
+
+        result
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct UserLoginPayload {
+    pub email: String,
+    pub password: String,
 }

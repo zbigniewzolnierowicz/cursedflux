@@ -1,5 +1,5 @@
 use crate::extractors::UserError;
-use crate::models::user::{NewUserPayload, User, UserChangeset};
+use crate::models::user::{NewUserPayload, User, UserChangeset, UserLoginPayload};
 use crate::AppData;
 use actix_web::error::BlockingError;
 use actix_web::{get, post, web, HttpResponse, Responder};
@@ -14,8 +14,17 @@ struct HelloResponse {
     message: String,
 }
 
+fn map_error(err: BlockingError<Error>) -> UserError {
+    match err {
+        BlockingError::Error(Error::DatabaseError(db_error_kind, _)) => {
+            UserError::from(db_error_kind)
+        }
+        _ => UserError::InternalServerError,
+    }
+}
+
 #[get("/")]
-async fn hello(data: web::Data<AppData>) -> HttpResponse {
+async fn hello(data: web::Data<AppData>) -> impl Responder {
     let db = data.db.get().unwrap();
     let result = web::block(move || User::get_all(&db)).await.unwrap();
     HttpResponse::Ok().json(result)
@@ -47,18 +56,33 @@ async fn register_user(
         email,
     };
 
-    let res = web::block(move || User::create(&db, &changeset))
+    web::block(move || User::create(&db, &changeset))
         .await
         .map(|user| HttpResponse::Ok().json(user))
-        .map_err(|err| match err {
-            BlockingError::Error(Error::DatabaseError(db_error_kind, _)) => {
-                UserError::from(db_error_kind)
-            }
-            _ => UserError::InternalServerError,
-        });
-    res
+        .map_err(map_error)
+}
+
+#[post("/login/")]
+async fn login_user(
+    data: web::Data<AppData>,
+    payload: web::Json<UserLoginPayload>,
+) -> Result<HttpResponse, UserError> {
+    let db = data.db.get().unwrap();
+    let UserLoginPayload { email: payload_email, password: payload_password } = payload.0;
+
+    let user = match web::block(move || User::get_by_email(&db, payload_email)).await {
+        Ok(user) => user,
+        Err(error) => return Err(map_error(error)),
+    };
+
+    if User::check_login(user.clone(), payload_password) {
+        Ok(HttpResponse::Ok().json(user))
+    } else {
+        Err(UserError::InternalServerError)
+    }
+
 }
 
 pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(hello).service(register_user);
+    cfg.service(hello).service(register_user).service(login_user);
 }
