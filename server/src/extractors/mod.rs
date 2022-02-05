@@ -11,6 +11,8 @@ pub enum UserError {
     InternalServerError,
     #[display(fmt = "An item with the following data already exists in the database!")]
     UniqueViolation,
+    #[display(fmt = "The password is incorrect!")]
+    MismatchedPassword,
 }
 
 impl From<DatabaseErrorKind> for UserError {

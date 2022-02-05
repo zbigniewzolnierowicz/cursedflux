@@ -78,7 +78,7 @@ async fn login_user(
     if User::check_login(user.clone(), payload_password) {
         Ok(HttpResponse::Ok().json(user))
     } else {
-        Err(UserError::InternalServerError)
+        Err(UserError::MismatchedPassword)
     }
 
 }
