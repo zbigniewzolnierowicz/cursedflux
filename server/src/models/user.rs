@@ -1,4 +1,3 @@
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use crate::diesel::*;
 use crate::schema::*;
 use crate::DB;
