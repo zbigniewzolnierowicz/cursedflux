@@ -3,6 +3,7 @@ use crate::diesel::*;
 use crate::schema::*;
 use crate::DB;
 use serde::{Deserialize, Serialize};
+use crate::utils::check_password;
 
 #[derive(Deserialize, Serialize)]
 pub struct NewUserPayload {
@@ -57,14 +58,7 @@ impl User {
     }
 
     pub fn check_login(self, password: String) -> bool {
-        let argon2 = Argon2::default();
-        let parsed_hash = match PasswordHash::new(&self.password_hash) {
-            Ok(parsed_hash) => parsed_hash,
-            Err(_) => return false,
-        };
-        let result = argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok();
-
-        result
+        check_password(self.password_hash, password)
     }
 }
 

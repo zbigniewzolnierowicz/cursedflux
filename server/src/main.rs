@@ -8,6 +8,7 @@ mod controllers;
 mod extractors;
 mod models;
 mod schema;
+mod utils;
 
 use crate::diesel::r2d2;
 use actix_web::middleware::normalize::TrailingSlash;
