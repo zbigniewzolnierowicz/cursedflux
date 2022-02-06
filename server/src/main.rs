@@ -50,7 +50,7 @@ async fn main() -> std::io::Result<()> {
             .data(AppData {
                 db: Arc::from(pool.clone()),
             })
-            .service(web::scope("/api").service(web::scope("/user").configure(controllers::config)))
+            .service(web::scope("/api").configure(controllers::config))
     })
     .bind("127.0.0.1:8080")?
     .run()
