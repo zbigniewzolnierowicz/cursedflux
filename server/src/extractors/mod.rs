@@ -31,6 +31,7 @@ impl error::ResponseError for UserError {
     fn status_code(&self) -> StatusCode {
         match *self {
             UserError::UniqueViolation => StatusCode::BAD_REQUEST,
+            UserError::MismatchedPassword => StatusCode::UNAUTHORIZED,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
