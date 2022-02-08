@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { postJson } from "../utils/api";
+
     const EMAIL_NAME = "email"
     const PASSWORD_NAME = "password"
 
@@ -11,17 +13,9 @@
         if (password instanceof File) return
         const data = { email, password };
 
-        const response = await fetch("http://localhost:8080/api/user/login", {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data) // body data type must match "Content-Type" header
-        });
+        const response = await postJson("/api/user/login", data);
 
-        console.log(await response.json());
+        console.log(response);
     }
 </script>
 
