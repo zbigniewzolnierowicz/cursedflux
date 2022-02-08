@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { postJson } from "../utils/api";
+    import { api } from "../utils/api";
 
     const EMAIL_NAME = "email"
     const PASSWORD_NAME = "password"
@@ -13,9 +13,9 @@
         if (password instanceof File) return
         const data = { email, password };
 
-        const response = await postJson("/api/user/login", data);
+        const response = await api.post("/api/user/login", JSON.stringify(data), { headers: { "Content-Type": "application/json" } });
 
-        console.log(response);
+        console.log(JSON.parse(response.data));
     }
 </script>
 
