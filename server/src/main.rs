@@ -11,14 +11,16 @@ mod schema;
 mod utils;
 
 use crate::diesel::r2d2;
-use actix_web::middleware::normalize::TrailingSlash;
-use actix_web::web;
+use actix_web::middleware::{normalize::TrailingSlash, DefaultHeaders};
+use actix_web::{web, http::header};
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 use dotenv::dotenv;
 use env_logger::Env;
 use std::env;
 use std::sync::Arc;
+use actix_cors::Cors;
+use crate::header::{ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN};
 
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DB = PooledConnection<ConnectionManager<PgConnection>>;
@@ -45,7 +47,21 @@ async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allowed_origin("http://localhost:3000")
+            .allowed_methods(vec!["GET", "POST"])
+            .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+            .allowed_header(header::CONTENT_TYPE)
+            .supports_credentials()
+            .max_age(3600);
+
         App::new()
+            .wrap(cors)
+            .wrap(
+                DefaultHeaders::new()
+                    .header(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                    .header(ACCESS_CONTROL_ALLOW_METHODS, "POST, GET, PUT, OPTIONS")
+            )
             .wrap(Logger::default())
             .wrap(NormalizePath::new(TrailingSlash::Always))
             .data(AppData {

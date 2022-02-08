@@ -9,19 +9,19 @@
         if (email instanceof File) return
         const password = formData.get(PASSWORD_NAME)
         if (password instanceof File) return
+        const data = { email, password };
+
         const response = await fetch("http://localhost:8080/api/user/login", {
-            body: JSON.stringify({
-                email,
-                password
-            }),
-            method: "POST",
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json'
             },
-            mode: 'cors'
-        })
+            body: JSON.stringify(data) // body data type must match "Content-Type" header
+        });
 
-        console.log(await response.json())
+        console.log(await response.json());
     }
 </script>
 
