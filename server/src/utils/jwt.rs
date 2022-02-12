@@ -12,3 +12,8 @@ pub struct JwtClaims {
 pub trait IntoJwt {
     fn into_jwt(self, duration: Duration, algorithm: Algorithm, key: EncodingKey) -> jsonwebtoken::errors::Result<String>;
 }
+
+pub struct JwtConfig {
+    pub algorithm: Algorithm,
+    pub secret: String
+}

@@ -11,29 +11,25 @@ mod schema;
 mod utils;
 
 use crate::diesel::r2d2;
+use crate::header::{ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN};
+use crate::utils::jwt::JwtConfig;
+use actix_cors::Cors;
 use actix_web::middleware::{normalize::TrailingSlash, DefaultHeaders};
-use actix_web::{web, http::header};
+use actix_web::{http::header, web};
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, PooledConnection};
 use dotenv::dotenv;
 use env_logger::Env;
+use jsonwebtoken::Algorithm;
 use std::env;
 use std::sync::Arc;
-use actix_cors::Cors;
-use jsonwebtoken::Algorithm;
-use crate::header::{ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN};
 
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DB = PooledConnection<ConnectionManager<PgConnection>>;
 
-pub struct JwtConfig {
-    pub algorithm: Algorithm,
-    pub secret: String
-}
-
 pub struct AppData {
     pub db: Arc<DbPool>,
-    pub jwt_config: Arc<JwtConfig>
+    pub jwt_config: Arc<JwtConfig>,
 }
 
 #[actix_web::main]
@@ -68,7 +64,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 DefaultHeaders::new()
                     .header(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
-                    .header(ACCESS_CONTROL_ALLOW_METHODS, "POST, GET, PUT, OPTIONS")
+                    .header(ACCESS_CONTROL_ALLOW_METHODS, "POST, GET, PUT, OPTIONS"),
             )
             .wrap(Logger::default())
             .wrap(NormalizePath::new(TrailingSlash::Always))
@@ -76,8 +72,8 @@ async fn main() -> std::io::Result<()> {
                 db: Arc::from(pool.clone()),
                 jwt_config: Arc::from(JwtConfig {
                     secret: jwt_secret.clone(),
-                    algorithm: Algorithm::HS512
-                })
+                    algorithm: Algorithm::HS512,
+                }),
             })
             .service(web::scope("/api").configure(controllers::config))
     })
