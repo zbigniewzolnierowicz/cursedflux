@@ -20,13 +20,20 @@ use env_logger::Env;
 use std::env;
 use std::sync::Arc;
 use actix_cors::Cors;
+use jsonwebtoken::Algorithm;
 use crate::header::{ACCESS_CONTROL_ALLOW_METHODS, ACCESS_CONTROL_ALLOW_ORIGIN};
 
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DB = PooledConnection<ConnectionManager<PgConnection>>;
 
+pub struct JwtConfig {
+    pub algorithm: Algorithm,
+    pub secret: String
+}
+
 pub struct AppData {
     pub db: Arc<DbPool>,
+    pub jwt_config: Arc<JwtConfig>
 }
 
 #[actix_web::main]
@@ -38,6 +45,7 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").expect("Database URL missing.");
+    let jwt_secret = env::var("JWT_SECRET").expect("JWT secret missing.");
 
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool = r2d2::Pool::builder()
@@ -66,6 +74,10 @@ async fn main() -> std::io::Result<()> {
             .wrap(NormalizePath::new(TrailingSlash::Always))
             .data(AppData {
                 db: Arc::from(pool.clone()),
+                jwt_config: Arc::from(JwtConfig {
+                    secret: jwt_secret.clone(),
+                    algorithm: Algorithm::HS512
+                })
             })
             .service(web::scope("/api").configure(controllers::config))
     })

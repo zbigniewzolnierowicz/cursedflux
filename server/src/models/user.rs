@@ -1,8 +1,11 @@
+use chrono::Duration;
+use jsonwebtoken::{Algorithm, encode, EncodingKey, Header};
 use crate::diesel::*;
 use crate::schema::*;
 use crate::DB;
 use serde::{Deserialize, Serialize};
 use crate::utils::check_password;
+use crate::utils::jwt::{IntoJwt, JwtClaims};
 
 #[derive(Deserialize, Serialize)]
 pub struct NewUserPayload {
@@ -58,6 +61,22 @@ impl User {
 
     pub fn check_login(self, password: String) -> bool {
         check_password(self.password_hash, password)
+    }
+}
+
+impl IntoJwt for User {
+    fn into_jwt(self, duration: Duration, algorithm: Algorithm, key: EncodingKey) -> jsonwebtoken::errors::Result<String> {
+        let current_time = chrono::Utc::now();
+        let iat = current_time.timestamp() as usize;
+        let duration_seconds = duration.num_seconds() as usize;
+        let exp = iat + duration_seconds;
+        let claims = JwtClaims {
+            iat,
+            exp,
+            sub: self.id
+        };
+
+        encode(&Header::new(algorithm), &claims, &key)
     }
 }
 

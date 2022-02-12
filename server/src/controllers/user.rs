@@ -1,11 +1,14 @@
 use crate::extractors::UserError;
 use crate::models::user::{NewUserPayload, User, UserChangeset, UserLoginPayload};
+use crate::utils::jwt::IntoJwt;
 use crate::AppData;
 use actix_web::error::BlockingError;
 use actix_web::{get, post, web, HttpResponse, Responder};
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
+use chrono::Duration;
 use diesel::result::Error;
+use jsonwebtoken::EncodingKey;
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 
@@ -68,7 +71,10 @@ async fn login_user(
     payload: web::Json<UserLoginPayload>,
 ) -> Result<HttpResponse, UserError> {
     let db = data.db.get().unwrap();
-    let UserLoginPayload { email: payload_email, password: payload_password } = payload.0;
+    let UserLoginPayload {
+        email: payload_email,
+        password: payload_password,
+    } = payload.0;
 
     let user = match web::block(move || User::get_by_email(&db, payload_email)).await {
         Ok(user) => user,
@@ -76,13 +82,21 @@ async fn login_user(
     };
 
     if User::check_login(user.clone(), payload_password) {
-        Ok(HttpResponse::Ok().json(user))
+        Ok(HttpResponse::Ok().body(
+            user.into_jwt(
+                Duration::minutes(10),
+                data.jwt_config.algorithm,
+                EncodingKey::from_secret(data.jwt_config.secret.as_bytes()),
+            )
+            .unwrap(),
+        ))
     } else {
         Err(UserError::MismatchedPassword)
     }
-
 }
 
 pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(hello).service(register_user).service(login_user);
+    cfg.service(hello)
+        .service(register_user)
+        .service(login_user);
 }

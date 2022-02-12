@@ -1,3 +1,5 @@
+pub mod jwt;
+
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 
 pub fn check_password(password_hash: String, password_to_check: String) -> bool {

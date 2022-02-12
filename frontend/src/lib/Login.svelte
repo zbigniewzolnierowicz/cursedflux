@@ -3,6 +3,7 @@
 
     const EMAIL_NAME = "email"
     const PASSWORD_NAME = "password"
+    let resultJwt: string | null = null;
 
     async function submitForm(event: SubmitEvent) {
         event.preventDefault()
@@ -15,7 +16,7 @@
 
         const response = await api.post("/api/user/login", JSON.stringify(data), { headers: { "Content-Type": "application/json" } });
 
-        console.log(JSON.parse(response.data));
+        resultJwt = response.data;
     }
 </script>
 
@@ -30,6 +31,11 @@
     </label>
     <input type="password" name={PASSWORD_NAME} id="login-password" />
     <button type="submit">Submit</button>
+    {#if resultJwt !== null}
+    <div>
+        {resultJwt}
+    </div>
+    {/if}
 </form>
 
 <style>
