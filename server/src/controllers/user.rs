@@ -1,4 +1,4 @@
-use crate::extractors::UserError;
+use crate::extractors::errors::UserError;
 use crate::models::user::{NewUserPayload, User, UserChangeset, UserLoginPayload};
 use crate::utils::jwt::IntoJwt;
 use crate::AppData;
