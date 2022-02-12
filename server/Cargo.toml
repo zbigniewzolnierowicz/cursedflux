@@ -17,6 +17,7 @@ argon2 = "0.3"
 rand_core = { version = "0.6", features = ["std"] }
 derive_more = "0.99.17"
 jsonwebtoken = "8.0.1"
+time = "0.2.27"
 
 [dependencies.chrono]
 version = "0.4.19"

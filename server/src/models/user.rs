@@ -1,4 +1,4 @@
-use chrono::Duration;
+use chrono::{DateTime, Duration, Utc};
 use jsonwebtoken::{Algorithm, encode, EncodingKey, Header};
 use crate::diesel::*;
 use crate::schema::*;
@@ -62,11 +62,15 @@ impl User {
     pub fn check_login(self, password: String) -> bool {
         check_password(self.password_hash, password)
     }
+
+    pub fn get_by_id(db: &DB, payload_id: String) -> QueryResult<Self> {
+        use crate::schema::users::dsl::*;
+        users.filter(id.eq(payload_id)).first(db)
+    }
 }
 
 impl IntoJwt for User {
-    fn into_jwt(self, duration: Duration, algorithm: Algorithm, key: EncodingKey) -> jsonwebtoken::errors::Result<String> {
-        let current_time = chrono::Utc::now();
+    fn into_jwt(self, current_time: DateTime<Utc>, duration: Duration, algorithm: Algorithm, key: EncodingKey) -> jsonwebtoken::errors::Result<String> {
         let iat = current_time.timestamp() as usize;
         let duration_seconds = duration.num_seconds() as usize;
         let exp = iat + duration_seconds;

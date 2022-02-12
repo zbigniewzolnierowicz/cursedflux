@@ -3,6 +3,7 @@ extern crate diesel;
 extern crate argon2;
 extern crate dotenv;
 extern crate rand;
+extern crate time;
 
 mod controllers;
 mod extractors;

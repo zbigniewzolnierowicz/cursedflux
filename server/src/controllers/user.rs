@@ -1,14 +1,16 @@
 use crate::extractors::errors::UserError;
 use crate::models::user::{NewUserPayload, User, UserChangeset, UserLoginPayload};
-use crate::utils::jwt::IntoJwt;
+use crate::utils::jwt::{IntoJwt, JwtClaims};
 use crate::AppData;
+use actix_web::cookie::SameSite;
 use actix_web::error::BlockingError;
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::http::Cookie;
+use actix_web::{get, post, web, HttpMessage, HttpRequest, HttpResponse, Responder};
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher};
-use chrono::Duration;
+use chrono::Utc;
 use diesel::result::Error;
-use jsonwebtoken::EncodingKey;
+use jsonwebtoken::{decode, DecodingKey, EncodingKey, Validation};
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 
@@ -27,10 +29,32 @@ fn map_error(err: BlockingError<Error>) -> UserError {
 }
 
 #[get("/")]
-async fn hello(data: web::Data<AppData>) -> impl Responder {
+async fn user_data(data: web::Data<AppData>, req: HttpRequest) -> impl Responder {
+    let user_jwt_cookie = req.cookie("user_jwt");
     let db = data.db.get().unwrap();
-    let result = web::block(move || User::get_all(&db)).await.unwrap();
-    HttpResponse::Ok().json(result)
+
+    if let Some(jwt_cookie) = user_jwt_cookie {
+        let jwt = jwt_cookie.value();
+        let parsed_jwt = decode::<JwtClaims>(
+            jwt,
+            &DecodingKey::from_secret(data.jwt_config.secret.as_bytes()),
+            &Validation::new(data.jwt_config.algorithm),
+        );
+
+        let parsed_jwt = match parsed_jwt {
+            Ok(claims) => claims,
+            Err(_) => return Err(UserError::InternalServerError),
+        };
+
+        let user = match web::block(move || User::get_by_id(&db, parsed_jwt.claims.sub)).await {
+            Ok(user) => user,
+            Err(error) => return Err(map_error(error)),
+        };
+
+        return Ok(HttpResponse::Ok().json(user));
+    }
+
+    Err(UserError::UserNotLoggedIn)
 }
 
 #[post("/")]
@@ -69,8 +93,32 @@ async fn register_user(
 async fn login_user(
     data: web::Data<AppData>,
     payload: web::Json<UserLoginPayload>,
+    req: HttpRequest,
 ) -> Result<HttpResponse, UserError> {
     let db = data.db.get().unwrap();
+
+    let user_jwt_cookie = req.cookie("user_jwt");
+
+    if let Some(jwt_cookie) = user_jwt_cookie {
+        let jwt = jwt_cookie.value();
+        let parsed_jwt = decode::<JwtClaims>(
+            jwt,
+            &DecodingKey::from_secret(data.jwt_config.secret.as_bytes()),
+            &Validation::new(data.jwt_config.algorithm),
+        );
+
+        let parsed_jwt = match parsed_jwt {
+            Ok(claims) => claims,
+            Err(_) => return Err(UserError::InternalServerError),
+        };
+
+        if let Err(error) = web::block(move || User::get_by_id(&db, parsed_jwt.claims.sub)).await {
+            return Err(map_error(error));
+        }
+
+        return Ok(HttpResponse::Ok().finish());
+    }
+
     let UserLoginPayload {
         email: payload_email,
         password: payload_password,
@@ -82,21 +130,33 @@ async fn login_user(
     };
 
     if User::check_login(user.clone(), payload_password) {
-        Ok(HttpResponse::Ok().body(
-            user.into_jwt(
-                Duration::minutes(10),
-                data.jwt_config.algorithm,
-                EncodingKey::from_secret(data.jwt_config.secret.as_bytes()),
-            )
-            .unwrap(),
-        ))
+        let current_time = Utc::now();
+        let user_jwt = user.into_jwt(
+            current_time,
+            chrono::Duration::minutes(10),
+            data.jwt_config.algorithm,
+            EncodingKey::from_secret(data.jwt_config.secret.as_bytes()),
+        );
+
+        let user_jwt = match user_jwt {
+            Ok(jwt) => jwt,
+            Err(_) => return Err(UserError::InternalServerError),
+        };
+
+        let user_cookie = Cookie::build("user_jwt", &user_jwt)
+            .http_only(true)
+            .max_age(time::Duration::new(10 * 60, 0))
+            .same_site(SameSite::None)
+            .finish();
+
+        Ok(HttpResponse::Ok().cookie(user_cookie).finish())
     } else {
         Err(UserError::MismatchedPassword)
     }
 }
 
 pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(hello)
+    cfg.service(user_data)
         .service(register_user)
         .service(login_user);
 }

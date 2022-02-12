@@ -13,6 +13,8 @@ pub enum UserError {
     UniqueViolation,
     #[display(fmt = "The password is incorrect!")]
     MismatchedPassword,
+    #[display(fmt = "The user is not logged in.")]
+    UserNotLoggedIn,
 }
 
 impl From<DatabaseErrorKind> for UserError {
@@ -32,6 +34,7 @@ impl error::ResponseError for UserError {
         match *self {
             UserError::UniqueViolation => StatusCode::BAD_REQUEST,
             UserError::MismatchedPassword => StatusCode::UNAUTHORIZED,
+            UserError::UserNotLoggedIn => StatusCode::UNAUTHORIZED,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

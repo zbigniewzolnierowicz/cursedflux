@@ -4,6 +4,7 @@
     const EMAIL_NAME = "email"
     const PASSWORD_NAME = "password"
     let resultJwt: string | null = null;
+    let userData: string | null = null;
 
     async function submitForm(event: SubmitEvent) {
         event.preventDefault()
@@ -14,11 +15,25 @@
         if (password instanceof File) return
         const data = { email, password };
 
-        const response = await api.post("/api/user/login", JSON.stringify(data), { headers: { "Content-Type": "application/json" } });
+        const response = await api.post("/api/user/login", JSON.stringify(data), { headers: { "Content-Type": "application/json" }, withCredentials: true });
 
         resultJwt = response.data;
     }
+
+    async function getUserData() {
+        const response = await api.get("/api/user", { withCredentials: true });
+        userData = response.data;
+    }
 </script>
+
+<button on:click={getUserData}>
+    Get user data
+</button>
+{#if userData}
+    <div>
+        {userData}
+    </div>
+{/if}
 
 <form on:submit={submitForm} class="login-form" id="login-form">
     <label for="login-email">

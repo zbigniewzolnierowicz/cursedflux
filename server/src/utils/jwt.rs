@@ -1,4 +1,4 @@
-use chrono::Duration;
+use chrono::{DateTime, Duration, Utc};
 use jsonwebtoken::{Algorithm, EncodingKey};
 use serde::{Serialize, Deserialize};
 
@@ -10,7 +10,7 @@ pub struct JwtClaims {
 }
 
 pub trait IntoJwt {
-    fn into_jwt(self, duration: Duration, algorithm: Algorithm, key: EncodingKey) -> jsonwebtoken::errors::Result<String>;
+    fn into_jwt(self, current_timestamp: DateTime<Utc>, duration: Duration, algorithm: Algorithm, key: EncodingKey) -> jsonwebtoken::errors::Result<String>;
 }
 
 pub struct JwtConfig {
