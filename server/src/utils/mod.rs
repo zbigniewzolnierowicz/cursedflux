@@ -7,6 +7,6 @@ pub fn check_password(password_hash: String, password_to_check: String) -> bool 
         Ok(parsed_hash) => argon2
             .verify_password(password_to_check.as_bytes(), &parsed_hash)
             .is_ok(),
-        Err(_) => return false,
+        Err(_) => false,
     }
 }
